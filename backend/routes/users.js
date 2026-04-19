@@ -50,21 +50,45 @@ function signToken(user) {
   );
 }
 
+// ── Input validation helpers ──────────────────────────────────────────────
+function isValidEmail(email) {
+  return typeof email === 'string' &&
+    email.length <= 254 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function isValidPassword(password) {
+  return typeof password === 'string' &&
+    password.length >= 8 &&
+    password.length <= 128;
+}
+
+function isValidName(name) {
+  return typeof name === 'string' &&
+    name.trim().length >= 1 &&
+    name.trim().length <= 100;
+}
+
 // ── Auth routes ────────────────────────────────────────────────────────────
 router.post('/auth/register', async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
-    if (!name || !email || !password)
-      return res.status(400).json({ message: 'name, email, and password are required' });
 
-    const existing = await query('SELECT id FROM users WHERE email = $1', [email]);
+    if (!isValidName(name))
+      return res.status(400).json({ message: 'Name must be between 1 and 100 characters.' });
+    if (!isValidEmail(email))
+      return res.status(400).json({ message: 'Please enter a valid email address.' });
+    if (!isValidPassword(password))
+      return res.status(400).json({ message: 'Password must be between 8 and 128 characters.' });
+
+    const existing = await query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
     if (existing.rows.length)
       return res.status(409).json({ message: 'Email already in use' });
 
     const hash = await bcrypt.hash(password, 12);
     const result = await query(
       'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email',
-      [name, email, hash]
+      [name.trim(), email.toLowerCase(), hash]
     );
     const user = result.rows[0];
     res.status(201).json({ token: signToken(user), user });
@@ -76,8 +100,10 @@ router.post('/auth/login', async (req, res, next) => {
     const { email, password } = req.body;
     if (!email || !password)
       return res.status(400).json({ message: 'email and password are required' });
+    if (!isValidEmail(email) || !isValidPassword(password))
+      return res.status(401).json({ message: 'Invalid credentials' });
 
-    const result = await query('SELECT * FROM users WHERE email = $1', [email]);
+    const result = await query('SELECT * FROM users WHERE email = $1', [email.toLowerCase()]);
     const user = result.rows[0];
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
