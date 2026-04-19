@@ -2,7 +2,7 @@
 // Service Worker — Skins Tracker
 // Handles: offline caching, push notifications
 
-const CACHE_NAME    = 'skins-v1';
+const CACHE_NAME    = 'gimme-v1';
 const OFFLINE_URL   = '/offline.html';
 
 // Static assets to cache on install
@@ -55,7 +55,7 @@ self.addEventListener('fetch', event => {
 
 // ── Push notifications ──
 self.addEventListener('push', event => {
-  let data = { title: '⛳ Skins', body: 'Something happened in your round!' };
+  let data = { title: '⛳ Gimme', body: 'Something happened in your round!' };
   try { data = event.data.json(); } catch {}
 
   event.waitUntil(
