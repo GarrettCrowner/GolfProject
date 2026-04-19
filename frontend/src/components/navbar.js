@@ -4,7 +4,7 @@ export function renderNavbar() {
   const nav = document.createElement("nav");
   nav.className = "navbar";
   nav.innerHTML = `
-    <a href="/" class="navbar-brand">⛳ Skins</a>
+    <a href="/" class="navbar-brand">⛳ Gimme</a>
     <div class="navbar-links">
       <a href="/">Home</a>
       <a href="/stats">Stats</a>
