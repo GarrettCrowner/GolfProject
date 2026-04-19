@@ -1,5 +1,5 @@
 {
-  "name": "skins-tracker-server",
+  "name": "gimme-server",
   "version": "1.0.0",
   "scripts": {
     "dev": "nodemon index.js",
