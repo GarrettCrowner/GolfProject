@@ -17,11 +17,21 @@ export async function renderSettlement(app, navigate) {
   const roundId = params.get("id");
   if (!roundId) { navigate("/"); return; }
 
+  // Retry helper — gives the backend a moment to commit writes before we read
+  async function fetchWithRetry(fn, retries = 3, delay = 400) {
+    for (let i = 0; i < retries; i++) {
+      try { return await fn(); } catch (err) {
+        if (i === retries - 1) throw err;
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  }
+
   try {
     const [round, holeScores, specials] = await Promise.all([
-      api.get(`/rounds/${roundId}`),
-      api.get(`/rounds/${roundId}/holes`),
-      api.get(`/rounds/${roundId}/specials`),
+      fetchWithRetry(() => api.get(`/rounds/${roundId}`)),
+      fetchWithRetry(() => api.get(`/rounds/${roundId}/holes`)),
+      fetchWithRetry(() => api.get(`/rounds/${roundId}/specials`)),
     ]);
 
     const players  = round.players;
@@ -99,8 +109,8 @@ export async function renderSettlement(app, navigate) {
     const settleCard = el("div", { className: "card" });
     settleCard.appendChild(el("h2", {}, "Who Pays Who"));
     settleCard.appendChild(renderSettlementTable(settlements.map(s => ({
-      fromName: mappedPlayers.find(p => p.id === s.from)?.name || "?",
-      toName:   mappedPlayers.find(p => p.id === s.to)?.name   || "?",
+      fromName: mappedPlayers.find(p => String(p.id) === String(s.from))?.name || "?",
+      toName:   mappedPlayers.find(p => String(p.id) === String(s.to))?.name   || "?",
       amount:   s.amount,
     }))));
     wrap.appendChild(settleCard);
