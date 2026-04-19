@@ -1,5 +1,5 @@
 {
-  "name": "skins-tracker-client",
+  "name": "gimme-client",
   "version": "1.0.0",
   "scripts": {
     "dev": "vite",
