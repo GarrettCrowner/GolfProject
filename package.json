@@ -6,8 +6,17 @@
     "dev:server": "npm run dev --prefix backend",
     "dev:client": "npm run dev --prefix frontend",
     "install:all": "npm install && npm install --prefix frontend && npm install --prefix backend",
-    "migrate": "psql -U postgres -d skins_tracker -f database/001_init.sql",
-    "setup": "npm run install:all && npm run migrate"
+    "migrate": "psql -d skins_tracker -f database/001_init.sql",
+    "setup": "npm run install:all && npm run migrate",
+    "docker:up": "docker compose -f docker/docker-compose.yml --env-file .env up -d --build",
+    "docker:down": "docker compose -f docker/docker-compose.yml --env-file .env down",
+    "docker:down:clean": "docker compose -f docker/docker-compose.yml --env-file .env down -v",
+    "docker:logs": "docker compose -f docker/docker-compose.yml --env-file .env logs -f",
+    "docker:logs:backend": "docker compose -f docker/docker-compose.yml --env-file .env logs -f backend",
+    "docker:logs:frontend": "docker compose -f docker/docker-compose.yml --env-file .env logs -f client",
+    "docker:restart": "docker compose -f docker/docker-compose.yml --env-file .env up -d --build",
+    "docker:ps": "docker compose -f docker/docker-compose.yml --env-file .env ps",
+    "docker:dev": "docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml --env-file .env up"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
