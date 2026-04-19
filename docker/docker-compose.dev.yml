@@ -1,0 +1,36 @@
+version: "3.9"
+# Development overrides — hot reload for both client and server
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+
+  db:
+    ports:
+      - "5432:5432"   # expose postgres locally for DB tools
+
+  server:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    command: npx nodemon index.js
+    volumes:
+      - ../backend:/app
+      - /app/node_modules
+    environment:
+      NODE_ENV: development
+    ports:
+      - "3000:3000"   # expose API directly for debugging
+
+  client:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    environment:
+      VITE_WS_URL: ws://localhost:3000/ws
+    ports:
+      - "5173:5173"
+    depends_on:
+      - server

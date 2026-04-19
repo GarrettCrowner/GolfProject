@@ -1,0 +1,73 @@
+version: "3.9"
+
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: skins_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       skins_tracker
+      POSTGRES_USER:     postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ../database/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - skins_net
+
+  # ── Node API + WebSocket ────────────────────────────────────────────
+  server:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: skins_server
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT:              3000
+      NODE_ENV:          production
+      DB_HOST:           db
+      DB_PORT:           5432
+      DB_NAME:           skins_tracker
+      DB_USER:           postgres
+      DB_PASSWORD:       ${DB_PASSWORD:-changeme}
+      JWT_SECRET:        ${JWT_SECRET:?JWT_SECRET is required}
+      CLIENT_URL:        ${CLIENT_URL:-http://localhost}
+      VAPID_EMAIL:       ${VAPID_EMAIL:-admin@example.com}
+      VAPID_PUBLIC_KEY:  ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+    networks:
+      - skins_net
+
+  # ── Vite Client (nginx) ─────────────────────────────────────────────
+  client:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_WS_URL: ${VITE_WS_URL:-}   # empty = same host (nginx proxies /ws)
+        VITE_VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+    container_name: skins_client
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "${PORT:-80}:80"
+    networks:
+      - skins_net
+
+volumes:
+  db_data:
+
+networks:
+  skins_net:
+    driver: bridge
