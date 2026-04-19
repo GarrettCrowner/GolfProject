@@ -101,42 +101,60 @@ export async function renderSetup(app, navigate) {
     gamesCard.appendChild(el("p", { className: "text-muted", style: "margin-bottom:0.75rem" }, "Toggle games and set point values."));
 
     GAME_DEFAULTS.forEach(g => {
-      const isActive = activeGames.has(g.game_type);
+      let isActive = activeGames.has(g.game_type);
+
       const row = el("div", {
         className: "flex-between",
-        style: `margin-bottom:0.6rem;opacity:${isActive ? "1" : "0.5"};transition:opacity 0.15s`
+        style: "margin-bottom:0.75rem;align-items:center"
       });
-      const left = el("div", { className: "flex gap-sm", style: "align-items:center;cursor:pointer" });
 
-      // Use a styled toggle instead of native checkbox for clearer visual feedback
-      const toggle = el("input", { type: "checkbox" });
-      toggle.checked = isActive;
+      // Left: custom toggle pill + label
+      const left = el("div", { className: "flex gap-sm", style: "align-items:center;cursor:pointer;flex:1" });
 
-      toggle.addEventListener("change", e => {
-        const checked = e.target.checked;
-        if (checked) activeGames.add(g.game_type);
+      // Custom toggle pill
+      const pill = document.createElement("div");
+      const updatePill = () => {
+        pill.style.cssText = [
+          "width:44px;height:26px;border-radius:999px;position:relative",
+          "cursor:pointer;flex-shrink:0;transition:background 0.2s",
+          `background:${isActive ? "var(--green)" : "#ccc"}`
+        ].join(";");
+        knob.style.cssText = [
+          "width:20px;height:20px;border-radius:50%;background:#fff",
+          "position:absolute;top:3px;transition:left 0.2s",
+          `left:${isActive ? "21px" : "3px"}`
+        ].join(";");
+      };
+
+      const knob = document.createElement("div");
+      pill.appendChild(knob);
+
+      const toggle = () => {
+        isActive = !isActive;
+        if (isActive) activeGames.add(g.game_type);
         else activeGames.delete(g.game_type);
-        // Update opacity of the row directly without full re-render
-        row.style.opacity = checked ? "1" : "0.5";
-        valueInput.disabled = !checked;
-      });
+        updatePill();
+        row.style.opacity = isActive ? "1" : "0.5";
+        valueInput.disabled = !isActive;
+      };
 
-      left.addEventListener("click", (e) => {
-        // Clicking the label area also toggles
-        if (e.target !== toggle) toggle.click();
-      });
+      pill.addEventListener("click", toggle);
+      updatePill();
 
-      left.appendChild(toggle);
-      left.appendChild(el("span", {}, `${g.emoji} ${g.label}`));
+      left.appendChild(pill);
+      left.appendChild(el("span", { style: "font-size:0.95rem;font-weight:500" }, `${g.emoji} ${g.label}`));
+      left.addEventListener("click", (e) => { if (e.target !== pill && e.target !== knob) toggle(); });
       row.appendChild(left);
 
+      // Right: dollar value input
       const right = el("div", { className: "flex gap-sm", style: "align-items:center" });
       const valueInput = el("input", {
         type: "number", step: "0.5", min: "0.5",
         value: gameValues[g.game_type],
         style: "width:5rem;text-align:right",
-        disabled: !isActive
       });
+      if (!isActive) valueInput.disabled = true;
+      if (!isActive) row.style.opacity = "0.5";
       valueInput.addEventListener("input", e => { gameValues[g.game_type] = parseFloat(e.target.value) || g.point_value; });
       right.appendChild(el("span", { className: "text-muted" }, "$"));
       right.appendChild(valueInput);
