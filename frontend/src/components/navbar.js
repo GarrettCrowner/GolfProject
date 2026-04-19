@@ -1,4 +1,4 @@
-// client/src/components/navbar.js
+// frontend/src/components/navbar.js
 
 export function renderNavbar() {
   const nav = document.createElement("nav");
@@ -7,7 +7,6 @@ export function renderNavbar() {
     <a href="/" class="navbar-brand">⛳ Skins</a>
     <div class="navbar-links">
       <a href="/">Home</a>
-      <a href="/artists">Artists</a>
       <a href="/stats">Stats</a>
     </div>
   `;
