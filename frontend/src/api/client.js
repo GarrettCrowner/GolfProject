@@ -1,4 +1,4 @@
-// client/src/api/client.js
+// frontend/src/api/client.js
 
 const BASE_URL = "/api";
 
@@ -27,7 +27,12 @@ async function request(method, path, body = null) {
     throw new Error(err.message || `HTTP ${res.status}`);
   }
 
-  return res.json();
+  // 204 No Content (DELETE responses) — no body to parse
+  if (res.status === 204) return null;
+
+  // Guard against empty bodies on any other response
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
 export const api = {
