@@ -1,0 +1,264 @@
+/* client/src/styles/base.css — mobile-first */
+
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green:        #1a7a4a;
+  --green-light:  #25a864;
+  --green-dark:   #0f4f2f;
+  --gold:         #e8960c;
+  --gold-light:   #f7b731;
+  --red:          #e03131;
+  --blue:         #1971c2;
+  --bg:           #f0f4f0;
+  --surface:      #ffffff;
+  --surface-2:    #f8faf8;
+  --border:       #d8e4d8;
+  --text:         #1a2e1a;
+  --text-muted:   #5a7a5a;
+  --radius:       12px;
+  --radius-sm:    8px;
+  --radius-lg:    20px;
+  --shadow:       0 2px 12px rgba(0,60,0,0.08);
+  --shadow-lg:    0 8px 32px rgba(0,60,0,0.12);
+
+  /* Touch targets — minimum 44px per Apple HIG */
+  --touch-target: 48px;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  /* Prevent pull-to-refresh interfering with swipe gestures */
+  overscroll-behavior-y: contain;
+}
+
+#app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1rem 1rem 6rem; /* bottom padding for thumb zone */
+}
+
+a { color: var(--green); text-decoration: none; }
+
+h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.25rem;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  margin-bottom: 0.75rem;
+  color: var(--green-dark);
+}
+
+h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; }
+
+/* ── Buttons — big enough for thumbs ── */
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius);
+  min-height: var(--touch-target);
+  padding: 0 1.25rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: transform 0.1s, opacity 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+button:active { transform: scale(0.97); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--green);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(26,122,74,0.35);
+}
+.btn-primary:active { box-shadow: none; }
+
+.btn-gold {
+  background: var(--gold);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(232,150,12,0.35);
+}
+
+.btn-danger  { background: var(--red);  color: #fff; }
+.btn-outline {
+  background: transparent;
+  border: 2px solid var(--green);
+  color: var(--green);
+  min-height: 40px;
+}
+.btn-sm {
+  min-height: 36px;
+  padding: 0 0.75rem;
+  font-size: 0.85rem;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Inputs — large tap targets ── */
+input, select, textarea {
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: 0.6rem 0.875rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1rem;        /* prevents iOS zoom on focus */
+  background: var(--surface);
+  color: var(--text);
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(26,122,74,0.12);
+}
+input[type="number"] { -moz-appearance: textfield; }
+input[type="number"]::-webkit-inner-spin-button { display: none; }
+input[type="checkbox"] {
+  width: 20px; height: 20px; min-height: unset;
+  accent-color: var(--green);
+  cursor: pointer;
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 1.25rem;
+  margin-bottom: 0.875rem;
+}
+
+/* ── Layout helpers ── */
+.page           { padding-top: 0.25rem; }
+.flex           { display: flex; }
+.flex-between   { display: flex; justify-content: space-between; align-items: center; }
+.flex-center    { display: flex; justify-content: center; align-items: center; }
+.flex-col       { display: flex; flex-direction: column; }
+.gap-xs         { gap: 0.3rem; }
+.gap-sm         { gap: 0.5rem; }
+.gap-md         { gap: 0.875rem; }
+.mt-xs          { margin-top: 0.3rem; }
+.mt-sm          { margin-top: 0.5rem; }
+.mt-md          { margin-top: 0.875rem; }
+.mt-lg          { margin-top: 1.5rem; }
+.w-full         { width: 100%; }
+
+/* ── Typography helpers ── */
+.text-muted   { color: var(--text-muted); font-size: 0.875rem; }
+.text-green   { color: var(--green); }
+.text-red     { color: var(--red); }
+.text-gold    { color: var(--gold); }
+.text-center  { text-align: center; }
+.text-sm      { font-size: 0.875rem; }
+.text-lg      { font-size: 1.125rem; }
+.font-bold    { font-weight: 700; }
+
+/* ── Divider ── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 0.75rem 0; }
+
+/* ── Empty state ── */
+.empty-state {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--text-muted);
+}
+.empty-state .empty-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+
+/* ── Stepper input (for scores on course) ── */
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  height: var(--touch-target);
+  background: var(--surface);
+}
+.stepper-btn {
+  min-height: unset;
+  height: 100%;
+  width: 44px;
+  padding: 0;
+  border-radius: 0;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 1.3rem;
+  font-weight: 400;
+  border: none;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+.stepper-btn:active { background: var(--border); transform: none; }
+.stepper-value {
+  flex: 1;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 2rem;
+}
+.stepper-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 0.2rem;
+}
+
+/* ── Score diff badge ── */
+.score-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem; height: 2rem;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.score-eagle  { background: #ffd700; color: #5a4000; }
+.score-birdie { background: #ff6b35; color: #fff; }
+.score-par    { background: var(--border); color: var(--text-muted); }
+.score-bogey  { background: #ffe0e0; color: var(--red); }
+.score-double { background: var(--red); color: #fff; }
+
+/* ── Toast notification ── */
+.toast {
+  position: fixed;
+  bottom: 5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--green-dark);
+  color: #fff;
+  padding: 0.65rem 1.25rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  z-index: 1000;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
