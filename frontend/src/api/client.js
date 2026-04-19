@@ -1,6 +1,10 @@
 // frontend/src/api/client.js
 
-const BASE_URL = "/api";
+// In production (Railway), VITE_API_URL points to the backend service URL.
+// In development, we use /api which Vite proxies to localhost:3000.
+const BASE_URL = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : "/api";
 
 function getToken() {
   return localStorage.getItem("token");
