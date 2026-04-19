@@ -7,6 +7,11 @@ const requireAuth = require('../middleware/auth');
 
 router.use(requireAuth);
 
+// ── Validation helpers ─────────────────────────────────────────────────────
+function isValidHole(n) { return Number.isInteger(Number(n)) && n >= 1 && n <= 18; }
+function isValidStrokes(n) { return Number.isInteger(Number(n)) && n >= 1 && n <= 30; }
+function isValidPointValue(v) { return !isNaN(v) && v >= 0.5 && v <= 100; }
+
 // ── Rounds ─────────────────────────────────────────────────────────────────
 router.get('/', async (req, res, next) => {
   try {
@@ -88,9 +93,12 @@ router.put('/:id([0-9]+)/games', async (req, res, next) => {
     await query('DELETE FROM round_games WHERE round_id = $1', [id]);
     if (games?.length) {
       for (const g of games) {
+        const val = g.point_value ?? 1;
+        if (!isValidPointValue(val))
+          return res.status(400).json({ message: `Invalid point value: ${val}` });
         await query(
           'INSERT INTO round_games (round_id, game_type, point_value, custom_name) VALUES ($1, $2, $3, $4)',
-          [id, g.game_type, g.point_value ?? 1, g.custom_name ?? null]
+          [id, g.game_type, val, g.custom_name ?? null]
         );
       }
     }
@@ -152,6 +160,12 @@ router.get('/:round_id([0-9]+)/holes', async (req, res, next) => {
 router.post('/:round_id([0-9]+)/holes', async (req, res, next) => {
   try {
     const { round_player_id, hole_number, strokes, par } = req.body;
+    if (!isValidHole(hole_number))
+      return res.status(400).json({ message: 'hole_number must be between 1 and 18' });
+    if (!isValidStrokes(strokes))
+      return res.status(400).json({ message: 'strokes must be between 1 and 30' });
+    if (![3,4,5].includes(Number(par)))
+      return res.status(400).json({ message: 'par must be 3, 4, or 5' });
     const result = await query(
       `INSERT INTO hole_scores (round_id, round_player_id, hole_number, strokes, par)
        VALUES ($1, $2, $3, $4, $5)
