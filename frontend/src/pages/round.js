@@ -135,13 +135,17 @@ export async function renderRound(app, navigate) {
     const mappedPlayers = players.map(p => ({ id: p.id, name: playerName(p) }));
 
     const handicapStrokes = {};
+    // Use actual slope/rating from selected tee if available
+    const slopeRating  = round.slope_rating  || 113;
+    const courseRating = round.course_rating || null;
+    const parTotal     = round.par_total     || 72;
+
     for (const p of players) {
       if (p.handicap_index && strokeIndexes.length) {
-        const ch = calculateCourseHandicap(p.handicap_index);
+        const ch = calculateCourseHandicap(p.handicap_index, slopeRating, courseRating, parTotal);
         handicapStrokes[p.id] = distributeHandicapStrokes(ch, strokeIndexes);
       } else if (p.handicap_index) {
-        // Fallback: distribute evenly if no stroke indexes loaded
-        const ch = calculateCourseHandicap(p.handicap_index);
+        const ch = calculateCourseHandicap(p.handicap_index, slopeRating, courseRating, parTotal);
         const strokes = {};
         const base = Math.floor(ch / round.holes);
         const rem  = ch % round.holes;
@@ -341,7 +345,12 @@ export async function renderRound(app, navigate) {
     });
     titleRow.appendChild(wsDot);
     hdrLeft.appendChild(titleRow);
-    if (round.course_name) hdrLeft.appendChild(el("p", { className: "text-muted text-sm" }, round.course_name));
+    if (round.course_name) {
+      const courseStr = round.tee_name
+        ? `${round.course_name} · ${round.tee_name} tees (${round.slope_rating}/${round.course_rating})`
+        : round.course_name;
+      hdrLeft.appendChild(el("p", { className: "text-muted text-sm" }, courseStr));
+    }
 
     // Active games badges
     const GAME_EMOJI = {
