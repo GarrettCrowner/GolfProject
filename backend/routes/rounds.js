@@ -65,15 +65,16 @@ router.post('/', async (req, res, next) => {
 
 router.patch('/:id([0-9]+)', async (req, res, next) => {
   try {
-    const { name, course_name, status } = req.body;
+    const { name, course_name, status, holes } = req.body;
     const result = await query(
       `UPDATE rounds SET
          name         = COALESCE($1, name),
          course_name  = COALESCE($2, course_name),
          status       = COALESCE($3, status),
+         holes        = COALESCE($4, holes),
          completed_at = CASE WHEN $3 = 'completed' THEN NOW() ELSE completed_at END
-       WHERE id = $4 AND created_by = $5 RETURNING *`,
-      [name, course_name, status, req.params.id, req.user.id]
+       WHERE id = $5 AND created_by = $6 RETURNING *`,
+      [name, course_name, status, holes || null, req.params.id, req.user.id]
     );
     if (!result.rows.length) return res.status(404).json({ message: 'Round not found' });
     res.json(result.rows[0]);
