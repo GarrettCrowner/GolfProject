@@ -65,7 +65,10 @@ ${preset.city}`);
           stroke_index: h.stroke_index,
         }));
         roundHoles = preset.holes.length; // auto-set 9 or 18 from preset
-        if (!roundName) roundName = preset.name;
+        // Always update round name to preset + today's date
+        const today = new Date();
+        const dateStr = `${today.getMonth()+1}/${today.getDate()}`;
+        roundName = `${preset.name} - ${dateStr}`;
         render();
       });
       presetGrid.appendChild(btn);
