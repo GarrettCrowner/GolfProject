@@ -1,6 +1,7 @@
 // client/src/pages/setup.js
 import { api } from "../api/client.js";
 import { el } from "../utils/helpers.js";
+import { searchCourses, getCourseTees } from "../utils/courseApi.js";
 
 const GAME_DEFAULTS = [
   { game_type: "sandy",       label: "Sandy",       point_value: 1, emoji: "🏖️" },
@@ -26,6 +27,10 @@ export async function renderSetup(app, navigate) {
   let friends          = [];
   let error            = "";
   let customStrokeIndexes = null; // null = use server defaults
+  let selectedCourse    = null;  // { id, course_name, city, state }
+  let availableTees     = [];    // tee options from API
+  let selectedTee       = null;  // { tee_name, slope_rating, course_rating, par_total }
+  let courseSearchTimer = null;
 
   try { friends = await api.get("/friends"); } catch {}
 
@@ -41,10 +46,114 @@ export async function renderSetup(app, navigate) {
     detailsCard.appendChild(el("h2", {}, "Round Details"));
     const nameInput = el("input", { type: "text", placeholder: "Round name (e.g. Saturday at Applebrook)", value: roundName });
     nameInput.addEventListener("input", e => { roundName = e.target.value; });
-    const courseInput = el("input", { type: "text", placeholder: "Course name", value: courseName, style: "margin-top:0.5rem" });
-    courseInput.addEventListener("input", e => { courseName = e.target.value; });
     detailsCard.appendChild(nameInput);
-    detailsCard.appendChild(courseInput);
+
+    // Course search
+    const courseSearchWrap = el("div", { style: "position:relative;margin-top:0.5rem" });
+    const courseInput = el("input", {
+      type: "text",
+      placeholder: "Search course name...",
+      value: selectedCourse ? `${selectedCourse.course_name} — ${selectedCourse.city}, ${selectedCourse.state}` : courseName,
+      autocomplete: "off"
+    });
+
+    const dropdown = el("div", {
+      style: "position:absolute;top:100%;left:0;right:0;background:var(--surface);border:2px solid var(--green);border-top:none;border-radius:0 0 var(--radius) var(--radius);z-index:100;max-height:200px;overflow-y:auto;display:none"
+    });
+
+    courseInput.addEventListener("input", e => {
+      const q = e.target.value;
+      courseName = q;
+      selectedCourse = null;
+      selectedTee = null;
+      availableTees = [];
+      clearTimeout(courseSearchTimer);
+      if (q.length < 2) { dropdown.style.display = "none"; return; }
+      courseSearchTimer = setTimeout(async () => {
+        const results = await searchCourses(q);
+        dropdown.innerHTML = "";
+        if (!results.length) {
+          const none = el("div", { style: "padding:0.6rem 0.875rem;color:var(--text-muted);font-size:0.875rem" }, "No courses found");
+          dropdown.appendChild(none);
+        } else {
+          results.slice(0, 8).forEach(course => {
+            const item = el("div", {
+              style: "padding:0.6rem 0.875rem;cursor:pointer;font-size:0.9rem;border-bottom:1px solid var(--border)"
+            });
+            item.innerHTML = `<strong>${course.course_name}</strong><br><span style="color:var(--text-muted);font-size:0.8rem">${course.city}, ${course.state} · Par ${course.par_total || '?'}</span>`;
+            item.addEventListener("mousedown", async (e) => {
+              e.preventDefault();
+              selectedCourse = course;
+              courseName = course.course_name;
+              courseInput.value = `${course.course_name} — ${course.city}, ${course.state}`;
+              dropdown.style.display = "none";
+              // Auto-fill round name if empty
+              if (!roundName) {
+                roundName = course.course_name;
+                nameInput.value = roundName;
+              }
+              // Fetch tees
+              availableTees = await getCourseTees(course.id);
+              selectedTee = null;
+              renderTeeSelector();
+            });
+            dropdown.appendChild(item);
+          });
+        }
+        dropdown.style.display = "block";
+      }, 350);
+    });
+
+    courseInput.addEventListener("blur", () => {
+      setTimeout(() => { dropdown.style.display = "none"; }, 150);
+    });
+    courseInput.addEventListener("focus", () => {
+      if (dropdown.children.length) dropdown.style.display = "block";
+    });
+
+    courseSearchWrap.appendChild(courseInput);
+    courseSearchWrap.appendChild(dropdown);
+    detailsCard.appendChild(courseSearchWrap);
+
+    // Tee selector — shown after course selected
+    const teeSelectorWrap = el("div", { style: "margin-top:0.5rem" });
+
+    function renderTeeSelector() {
+      teeSelectorWrap.innerHTML = "";
+      if (!availableTees.length) return;
+
+      // Filter to unique male tees by name
+      const maleTees = availableTees.filter(t => t.gender === "Male" || !t.gender);
+      if (!maleTees.length) return;
+
+      const label = el("p", { className: "text-muted text-sm", style: "margin-bottom:0.4rem" }, "Select tee:");
+      teeSelectorWrap.appendChild(label);
+
+      const teeRow = el("div", { className: "flex gap-sm", style: "flex-wrap:wrap" });
+      maleTees.forEach(tee => {
+        const isSelected = selectedTee?.id === tee.id;
+        const btn = el("button", {
+          className: isSelected ? "btn-primary btn-sm" : "btn-outline btn-sm",
+          style: `background:${isSelected ? "" : tee.tee_color || "transparent"};border-color:${tee.tee_color || "var(--green)"};color:${isSelected ? "" : "#fff"};text-shadow:0 1px 2px rgba(0,0,0,0.4)`
+        }, `${tee.tee_name} (${tee.slope_rating}/${tee.course_rating})`);
+        btn.addEventListener("click", () => {
+          selectedTee = tee;
+          renderTeeSelector();
+        });
+        teeRow.appendChild(btn);
+      });
+      teeSelectorWrap.appendChild(teeRow);
+
+      if (selectedTee) {
+        const info = el("p", { className: "text-muted text-sm", style: "margin-top:0.4rem" },
+          `Slope: ${selectedTee.slope_rating} · Rating: ${selectedTee.course_rating} · Par: ${selectedTee.par_total}`
+        );
+        teeSelectorWrap.appendChild(info);
+      }
+    }
+
+    renderTeeSelector();
+    detailsCard.appendChild(teeSelectorWrap);
     wrap.appendChild(detailsCard);
 
     // Players
@@ -247,7 +356,14 @@ export async function renderSetup(app, navigate) {
     if (!roundName.trim()) { error = "Please enter a round name."; render(); return; }
     if (!players.length)   { error = "Add at least one player.";  render(); return; }
     try {
-      const round = await api.post("/rounds", { name: roundName, course_name: courseName });
+      const round = await api.post("/rounds", {
+        name: roundName,
+        course_name: courseName,
+        slope_rating: selectedTee?.slope_rating || null,
+        course_rating: selectedTee?.course_rating || null,
+        par_total: selectedTee?.par_total || null,
+        tee_name: selectedTee?.tee_name || null,
+      });
       for (const p of players) {
         const body = { color: p.color, handicap_index: p.handicap_index };
         if (p.user_id) body.user_id = p.user_id; else body.guest_name = p.name;
