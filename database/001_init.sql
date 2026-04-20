@@ -128,3 +128,9 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id);
+
+-- Add tee/course rating columns to rounds (for accurate handicap calculation)
+ALTER TABLE rounds ADD COLUMN IF NOT EXISTS slope_rating DECIMAL(5,1);
+ALTER TABLE rounds ADD COLUMN IF NOT EXISTS course_rating DECIMAL(5,2);
+ALTER TABLE rounds ADD COLUMN IF NOT EXISTS par_total INT DEFAULT 72;
+ALTER TABLE rounds ADD COLUMN IF NOT EXISTS tee_name VARCHAR(50);
