@@ -1,14 +1,16 @@
 // frontend/src/utils/coursePresets.js
 // Hardcoded course presets for local favorites
-// Par and stroke index data sourced from 18Birdies / GolfPass scorecards
+// Par, stroke index, and tee data sourced from 18Birdies / GolfPass scorecards
 
 export const COURSE_PRESETS = [
   {
     name: "Meadow Brook Golf Course",
     city: "Gettysburg", state: "PA",
     par_total: 72, slope_rating: 127, course_rating: 69.6,
+    tees: [
+      { tee_name: "Blue",  slope_rating: 127, course_rating: 69.6, par_total: 72 },
+    ],
     holes: [
-      // Pars from GolfPass review; stroke indexes estimated (no public source found)
       { hole_number:  1, par: 4, stroke_index: 7  },
       { hole_number:  2, par: 4, stroke_index: 11 },
       { hole_number:  3, par: 3, stroke_index: 15 },
@@ -34,6 +36,13 @@ export const COURSE_PRESETS = [
     name: "Quail Valley Golf Club",
     city: "Littlestown", state: "PA",
     par_total: 72, slope_rating: 139, course_rating: 74.2,
+    tees: [
+      { tee_name: "Maroon", slope_rating: 139, course_rating: 74.2, par_total: 72 },
+      { tee_name: "Black",  slope_rating: 135, course_rating: 72.1, par_total: 72 },
+      { tee_name: "White",  slope_rating: 130, course_rating: 70.5, par_total: 72 },
+      { tee_name: "Gold",   slope_rating: 125, course_rating: 68.0, par_total: 72 },
+      { tee_name: "Green",  slope_rating: 112, course_rating: 64.8, par_total: 72 },
+    ],
     holes: [
       { hole_number:  1, par: 4, stroke_index: 15 },
       { hole_number:  2, par: 3, stroke_index: 11 },
@@ -59,6 +68,12 @@ export const COURSE_PRESETS = [
     name: "Flatbush Golf Course",
     city: "Littlestown", state: "PA",
     par_total: 71, slope_rating: 128, course_rating: 72.5,
+    tees: [
+      { tee_name: "Blue",  slope_rating: 128, course_rating: 72.5, par_total: 71 },
+      { tee_name: "White", slope_rating: 121, course_rating: 69.7, par_total: 71 },
+      { tee_name: "Gold",  slope_rating: 112, course_rating: 66.7, par_total: 71 },
+      { tee_name: "Red",   slope_rating: 118, course_rating: 69.0, par_total: 71 },
+    ],
     holes: [
       { hole_number:  1, par: 5, stroke_index: 11 },
       { hole_number:  2, par: 4, stroke_index: 5  },
@@ -84,6 +99,12 @@ export const COURSE_PRESETS = [
     name: "Gettysburg National Golf Club",
     city: "Fairfield", state: "PA",
     par_total: 71, slope_rating: 127, course_rating: 70.8,
+    tees: [
+      { tee_name: "Gray",  slope_rating: 127, course_rating: 70.8, par_total: 71 },
+      { tee_name: "Blue",  slope_rating: 123, course_rating: 69.3, par_total: 71 },
+      { tee_name: "White", slope_rating: 117, course_rating: 66.6, par_total: 71 },
+      { tee_name: "Red",   slope_rating: 115, course_rating: 67.4, par_total: 71 },
+    ],
     holes: [
       { hole_number:  1, par: 4, stroke_index: 6  },
       { hole_number:  2, par: 4, stroke_index: 10 },
@@ -109,6 +130,9 @@ export const COURSE_PRESETS = [
     name: "Clayton Park Golf Course",
     city: "Glen Mills", state: "PA",
     par_total: 30, slope_rating: 102, course_rating: 59.9,
+    tees: [
+      { tee_name: "White", slope_rating: 102, course_rating: 59.9, par_total: 30 },
+    ],
     holes: [
       { hole_number: 1, par: 4, stroke_index: 15 },
       { hole_number: 2, par: 3, stroke_index: 9  },
