@@ -58,7 +58,22 @@ ${preset.city}`);
         // Apply preset
         courseName = preset.name;
         selectedCourse = { course_name: preset.name, city: preset.city, state: preset.state };
-        selectedTee = { slope_rating: preset.slope_rating, course_rating: preset.course_rating, par_total: preset.par_total };
+        // Load tees from preset
+        if (preset.tees && preset.tees.length) {
+          availableTees = preset.tees.map((t, i) => ({
+            id: `preset-${i}`,
+            tee_name: t.tee_name,
+            tee_color: t.tee_name.toLowerCase(),
+            slope_rating: t.slope_rating,
+            course_rating: t.course_rating,
+            par_total: t.par_total,
+            gender: "Male",
+          }));
+          selectedTee = availableTees[0]; // auto-select first tee
+        } else {
+          availableTees = [];
+          selectedTee = { slope_rating: preset.slope_rating, course_rating: preset.course_rating, par_total: preset.par_total };
+        }
         customStrokeIndexes = preset.holes.map(h => ({
           hole_number: h.hole_number,
           par: h.par,
