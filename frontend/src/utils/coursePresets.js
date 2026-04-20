@@ -9,6 +9,9 @@ export const COURSE_PRESETS = [
     par_total: 72, slope_rating: 127, course_rating: 69.6,
     tees: [
       { tee_name: "Blue",  slope_rating: 127, course_rating: 69.6, par_total: 72 },
+      { tee_name: "White", slope_rating: 126, course_rating: 68.3, par_total: 72 },
+      { tee_name: "Gold",  slope_rating: 113, course_rating: 65.1, par_total: 72 },
+      { tee_name: "Red",   slope_rating: 115, course_rating: 68.3, par_total: 72 },
     ],
     holes: [
       { hole_number:  1, par: 4, stroke_index: 7  },
