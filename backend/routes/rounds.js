@@ -51,10 +51,11 @@ router.get('/:id([0-9]+)', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
   try {
-    const { name, course_name, holes = 18 } = req.body;
+    const { name, course_name, holes = 18, slope_rating, course_rating, par_total, tee_name } = req.body;
     const result = await query(
-      'INSERT INTO rounds (name, course_name, created_by, holes) VALUES ($1, $2, $3, $4) RETURNING *',
-      [name, course_name, req.user.id, holes]
+      `INSERT INTO rounds (name, course_name, created_by, holes, slope_rating, course_rating, par_total, tee_name)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [name, course_name, req.user.id, holes, slope_rating || null, course_rating || null, par_total || 72, tee_name || null]
     );
     const round = result.rows[0];
     await query('INSERT INTO round_players (round_id, user_id) VALUES ($1, $2)', [round.id, req.user.id]);
