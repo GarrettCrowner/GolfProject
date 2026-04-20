@@ -54,6 +54,7 @@ export async function renderSetup(app, navigate) {
       }, `${preset.name.split(' ').slice(0, 2).join(' ')}
 ${preset.city}`);
       btn.style.whiteSpace = "pre-line";
+      btn.style.fontWeight = "normal";
       btn.addEventListener("click", () => {
         // Apply preset
         courseName = preset.name;
