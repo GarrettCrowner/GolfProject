@@ -22,7 +22,7 @@ export async function renderSetup(app, navigate) {
   let roundName   = "";
   let courseName  = "";
   let players     = [];
-  let activeGames = new Set(["sandy","poley","barkie","greenie","splashy","birdie","eagle"]);
+  let activeGames = new Set(["sandy","poley","barkie","greenie","splashy","birdie","eagle","stroke_play"]);
   let gameValues  = Object.fromEntries(GAME_DEFAULTS.map(g => [g.game_type, g.point_value]));
   let friends          = [];
   let error            = "";
