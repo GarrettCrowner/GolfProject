@@ -299,6 +299,153 @@ export async function renderRound(app, navigate) {
     } catch (err) { showToast("Error: " + err.message); }
   }
 
+  function showSettingsModal() {
+    // Remove any existing modal
+    const existing = document.getElementById('round-settings-modal');
+    if (existing) existing.remove();
+
+    const overlay = el("div", {
+      id: "round-settings-modal",
+      style: [
+        "position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000",
+        "display:flex;align-items:flex-end;justify-content:center"
+      ].join(";")
+    });
+
+    const modal = el("div", {
+      style: [
+        "background:var(--surface);border-radius:1rem 1rem 0 0;padding:1.25rem",
+        "width:100%;max-width:480px;max-height:80vh;overflow-y:auto"
+      ].join(";")
+    });
+
+    // Header
+    const mHdr = el("div", { className: "flex-between", style: "margin-bottom:1rem" });
+    mHdr.appendChild(el("h2", { style: "margin:0" }, "⚙️ Round Settings"));
+    const closeBtn = el("button", { className: "btn-outline btn-sm" }, "✕");
+    closeBtn.addEventListener("click", () => overlay.remove());
+    mHdr.appendChild(closeBtn);
+    modal.appendChild(mHdr);
+
+    // 9 / 18 holes toggle
+    const holesSection = el("div", { style: "margin-bottom:1rem" });
+    holesSection.appendChild(el("p", { className: "text-muted text-sm", style: "margin-bottom:0.4rem" }, "Holes"));
+    const holesRow = el("div", { className: "flex gap-sm" });
+    [9, 18].forEach(n => {
+      const btn = el("button", {
+        className: round.holes === n ? "btn-primary btn-sm" : "btn-outline btn-sm",
+        style: "min-width:3.5rem"
+      }, String(n));
+      btn.addEventListener("click", async () => {
+        try {
+          await api.patch(`/rounds/${roundId}`, { holes: n });
+          round.holes = n;
+          if (activeHole > n) activeHole = n;
+          overlay.remove();
+          render();
+          showToast(`Switched to ${n} holes`);
+        } catch (err) { showToast("Error: " + err.message); }
+      });
+      holesRow.appendChild(btn);
+    });
+    holesSection.appendChild(holesRow);
+    modal.appendChild(holesSection);
+
+    // Games toggles
+    const ALL_GAMES = [
+      { game_type: "sandy",      label: "Sandy",      emoji: "🏖️", default_value: 1 },
+      { game_type: "poley",      label: "Poley",      emoji: "🚩", default_value: 1 },
+      { game_type: "barkie",     label: "Barkie",     emoji: "🌲", default_value: 1 },
+      { game_type: "greenie",    label: "Greenie",    emoji: "🟢", default_value: 1 },
+      { game_type: "splashy",    label: "Splashy",    emoji: "💧", default_value: 1 },
+      { game_type: "birdie",     label: "Birdie",     emoji: "🐦", default_value: 2 },
+      { game_type: "eagle",      label: "Eagle",      emoji: "🦅", default_value: 5 },
+      { game_type: "stroke_play",label: "Stroke Play",emoji: "💰", default_value: 1 },
+    ];
+
+    const gamesSection = el("div");
+    gamesSection.appendChild(el("p", { className: "text-muted text-sm", style: "margin-bottom:0.5rem" }, "Games"));
+
+    ALL_GAMES.forEach(g => {
+      const existing = games.find(x => x.game_type === g.game_type);
+      let isActive = !!existing;
+      let pointVal = existing ? parseFloat(existing.point_value) : g.default_value;
+
+      const row = el("div", {
+        style: `display:flex;align-items:center;justify-content:space-between;margin-bottom:0.65rem;opacity:${isActive ? "1" : "0.5"};transition:opacity 0.15s`
+      });
+
+      const left = el("div", { className: "flex gap-sm", style: "align-items:center;flex:1;cursor:pointer" });
+
+      // Toggle pill
+      const pill = document.createElement("div");
+      const knob = document.createElement("div");
+      pill.appendChild(knob);
+
+      const updatePill = () => {
+        pill.style.cssText = "width:44px;height:26px;border-radius:999px;position:relative;cursor:pointer;flex-shrink:0;transition:background 0.2s;background:" + (isActive ? "var(--green)" : "#ccc");
+        knob.style.cssText = "width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:3px;transition:left 0.2s;left:" + (isActive ? "21px" : "3px");
+      };
+      updatePill();
+
+      const toggle = async () => {
+        isActive = !isActive;
+        updatePill();
+        row.style.opacity = isActive ? "1" : "0.5";
+        valueInput.disabled = !isActive;
+        try {
+          if (isActive) {
+            // Add game
+            const newGames = [...games.filter(x => x.game_type !== g.game_type), { game_type: g.game_type, point_value: pointVal }];
+            await api.put(`/rounds/${roundId}/games`, { games: newGames });
+          } else {
+            // Remove game
+            const newGames = games.filter(x => x.game_type !== g.game_type);
+            await api.put(`/rounds/${roundId}/games`, { games: newGames });
+          }
+          games = (await api.get(`/rounds/${roundId}`)).games;
+          render();
+        } catch (err) { showToast("Error: " + err.message); isActive = !isActive; updatePill(); }
+      };
+
+      pill.addEventListener("click", toggle);
+      left.appendChild(pill);
+      left.appendChild(el("span", { style: "font-size:0.95rem;font-weight:500" }, `${g.emoji} ${g.label}`));
+      left.addEventListener("click", e => { if (e.target !== pill && e.target !== knob) toggle(); });
+      row.appendChild(left);
+
+      // Value input
+      const right = el("div", { className: "flex gap-sm", style: "align-items:center" });
+      const valueInput = el("input", {
+        type: "number", step: "0.5", min: "0.5",
+        value: pointVal,
+        style: "width:4.5rem;text-align:right",
+        disabled: !isActive
+      });
+      valueInput.addEventListener("change", async e => {
+        pointVal = parseFloat(e.target.value) || g.default_value;
+        if (!isActive) return;
+        try {
+          const newGames = games.map(x => x.game_type === g.game_type ? { ...x, point_value: pointVal } : x);
+          await api.put(`/rounds/${roundId}/games`, { games: newGames });
+          games = (await api.get(`/rounds/${roundId}`)).games;
+          render();
+        } catch (err) { showToast("Error: " + err.message); }
+      });
+      right.appendChild(el("span", { className: "text-muted" }, "$"));
+      right.appendChild(valueInput);
+      row.appendChild(right);
+      gamesSection.appendChild(row);
+    });
+
+    modal.appendChild(gamesSection);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Close on overlay click
+    overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+  }
+
   async function finishRound() {
     try {
       const mappedPlayers = players.map(p => ({ id: p.id, name: playerName(p) }));
@@ -373,9 +520,19 @@ export async function renderRound(app, navigate) {
     }
 
     hdr.appendChild(hdrLeft);
+
+    const hdrRight = el("div", { className: "flex gap-sm", style: "align-items:center;flex-shrink:0" });
+
+    // Settings button
+    const settingsBtn = el("button", { className: "btn-outline btn-sm", style: "padding:0.3rem 0.6rem;font-size:1rem" }, "⚙️");
+    settingsBtn.addEventListener("click", () => showSettingsModal());
+    hdrRight.appendChild(settingsBtn);
+
     const finishBtn = el("button", { className: "btn-gold btn-sm" }, "🏁 Finish");
     finishBtn.addEventListener("click", finishRound);
-    hdr.appendChild(finishBtn);
+    hdrRight.appendChild(finishBtn);
+
+    hdr.appendChild(hdrRight);
     wrap.appendChild(hdr);
 
     // Leaderboard
