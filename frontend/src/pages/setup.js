@@ -67,7 +67,7 @@ ${preset.city}`);
         roundHoles = preset.holes.length; // auto-set 9 or 18 from preset
         // Always update round name to preset + today's date
         const today = new Date();
-        const dateStr = `${today.getMonth()+1}/${today.getDate()}`;
+        const dateStr = `${today.getMonth()+1}/${today.getDate()}/${String(today.getFullYear()).slice(-2)}`;
         roundName = `${preset.name} - ${dateStr}`;
         render();
       });
