@@ -62,7 +62,7 @@ export function calculateStrokePlayPayouts(players, holeScores, handicapStrokes,
       .filter((id) => holeData[id] != null)
       .map((id) => ({ id, net: netScore(holeData[id], handicapStrokes[id]?.[hole] ?? 0) }));
 
-    if (netScores.length === 0) { carryOver += valuePerHole * playerCount; continue; }
+    if (netScores.length === 0) { continue; } // skip unplayed holes, don't add carry
 
     const minNet = Math.min(...netScores.map((s) => s.net));
     const winners = netScores.filter((s) => s.net === minNet);
