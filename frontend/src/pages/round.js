@@ -460,8 +460,8 @@ export async function renderRound(app, navigate) {
       const finalBal   = mergeBalances(calculateBalances(mappedPlayers, allSpecials));
       const settlements = calculateSettlements(finalBal, mappedPlayers);
       const dbSettlements = settlements.map(s => ({
-        from_player: players.find(p => p.id === s.from)?.id,
-        to_player:   players.find(p => p.id === s.to)?.id,
+        from_player: s.from,
+        to_player:   s.to,
         amount: s.amount,
       }));
       await api.post(`/rounds/${roundId}/settlement`, { settlements: dbSettlements });
