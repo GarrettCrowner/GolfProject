@@ -396,4 +396,144 @@ router.post('/:round_id([0-9]+)/settlement', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+
+// ── Enhanced stats endpoints ────────────────────────────────────────────────
+
+// Season leaderboard — earnings for all users in shared rounds this year
+router.get('/stats/season', async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const year = new Date().getFullYear();
+
+    // Get all rounds the current user participated in this year
+    const result = await query(`
+      SELECT
+        u.id, u.name,
+        COALESCE(SUM(
+          CASE WHEN s_from.user_id = u.id THEN -se.amount
+               WHEN s_to.user_id   = u.id THEN  se.amount
+               ELSE 0 END
+        ), 0) AS season_earnings,
+        COUNT(DISTINCT rp.round_id) AS rounds_played
+      FROM round_players rp
+      JOIN users u ON u.id = rp.user_id
+      JOIN rounds r ON r.id = rp.round_id
+      LEFT JOIN settlements se ON se.round_id = rp.round_id
+      LEFT JOIN round_players s_from ON s_from.id = se.from_player
+      LEFT JOIN round_players s_to   ON s_to.id   = se.to_player
+      WHERE r.status = 'completed'
+        AND EXTRACT(YEAR FROM r.completed_at) = $1
+        AND r.id IN (SELECT round_id FROM round_players WHERE user_id = $2)
+        AND rp.user_id IS NOT NULL
+      GROUP BY u.id, u.name
+      ORDER BY season_earnings DESC
+    `, [year, userId]);
+
+    res.json({ year, leaderboard: result.rows });
+  } catch (err) { next(err); }
+});
+
+// Head-to-head stats vs all friends
+router.get('/stats/h2h', async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    // Get all friends
+    const friends = await query(
+      `SELECT u.id, u.name FROM friendships f JOIN users u ON u.id = f.friend_id WHERE f.user_id = $1`,
+      [userId]
+    );
+
+    const results = await Promise.all(friends.rows.map(async friend => {
+      // Rounds where both players participated
+      const sharedRounds = await query(`
+        SELECT r.id FROM rounds r
+        JOIN round_players rp1 ON rp1.round_id = r.id AND rp1.user_id = $1
+        JOIN round_players rp2 ON rp2.round_id = r.id AND rp2.user_id = $2
+        WHERE r.status = 'completed'
+      `, [userId, friend.id]);
+
+      if (!sharedRounds.rows.length) return { friend, rounds: 0, netEarnings: 0, wins: 0, losses: 0 };
+
+      const roundIds = sharedRounds.rows.map(r => r.id);
+
+      // Net earnings vs this friend across shared rounds
+      const earnings = await query(`
+        SELECT COALESCE(SUM(
+          CASE
+            WHEN s_from.user_id = $1 AND s_to.user_id = $2 THEN -se.amount
+            WHEN s_to.user_id   = $1 AND s_from.user_id = $2 THEN se.amount
+            ELSE 0
+          END
+        ), 0) AS net
+        FROM settlements se
+        JOIN round_players s_from ON s_from.id = se.from_player
+        JOIN round_players s_to   ON s_to.id   = se.to_player
+        WHERE se.round_id = ANY($3)
+      `, [userId, friend.id, roundIds]);
+
+      const net = parseFloat(earnings.rows[0]?.net || 0);
+
+      // Count wins/losses per round
+      let wins = 0, losses = 0;
+      for (const rid of roundIds) {
+        const roundEarnings = await query(`
+          SELECT COALESCE(SUM(
+            CASE
+              WHEN s_from.user_id = $1 AND s_to.user_id = $2 THEN -se.amount
+              WHEN s_to.user_id   = $1 AND s_from.user_id = $2 THEN se.amount
+              ELSE 0
+            END
+          ), 0) AS net
+          FROM settlements se
+          JOIN round_players s_from ON s_from.id = se.from_player
+          JOIN round_players s_to   ON s_to.id   = se.to_player
+          WHERE se.round_id = $3
+        `, [userId, friend.id, rid]);
+        const roundNet = parseFloat(roundEarnings.rows[0]?.net || 0);
+        if (roundNet > 0) wins++;
+        else if (roundNet < 0) losses++;
+      }
+
+      return {
+        friend,
+        rounds: sharedRounds.rows.length,
+        netEarnings: net,
+        wins,
+        losses,
+      };
+    }));
+
+    res.json(results.filter(r => r.rounds > 0));
+  } catch (err) { next(err); }
+});
+
+// Best rounds — top 5 rounds by net earnings
+router.get('/stats/best-rounds', async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const result = await query(`
+      SELECT
+        r.id, r.name, r.course_name, r.completed_at,
+        COALESCE(SUM(
+          CASE WHEN s_to.user_id   = $1 THEN  se.amount
+               WHEN s_from.user_id = $1 THEN -se.amount
+               ELSE 0 END
+        ), 0) AS net_earnings
+      FROM rounds r
+      JOIN round_players rp ON rp.round_id = r.id AND rp.user_id = $1
+      LEFT JOIN settlements se ON se.round_id = r.id
+      LEFT JOIN round_players s_from ON s_from.id = se.from_player
+      LEFT JOIN round_players s_to   ON s_to.id   = se.to_player
+      WHERE r.status = 'completed'
+      GROUP BY r.id, r.name, r.course_name, r.completed_at
+      ORDER BY net_earnings DESC
+      LIMIT 5
+    `, [userId]);
+
+    res.json(result.rows);
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
