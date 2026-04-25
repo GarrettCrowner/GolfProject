@@ -651,7 +651,28 @@ export async function renderRound(app, navigate) {
       // Header
       const pHdr = el("div", { className: "player-row-header" });
       pHdr.appendChild(el("div", { className: "player-color-dot", style: `background:${color}` }));
-      pHdr.appendChild(el("span", { className: "player-name" }, name));
+
+      const nameWrap = el("div", { style: "display:flex;flex-direction:column;gap:0.1rem" });
+      nameWrap.appendChild(el("span", { className: "player-name" }, name));
+
+      // Handicap info + stroke indicator
+      const hcpInfo = [];
+      const hcpIndex = p.handicap_index;
+      if (hcpIndex) {
+        if (hcpIndex < 0) {
+          hcpInfo.push(`${Math.abs(hcpIndex)} strokes gained`);
+        } else {
+          hcpInfo.push(`HCP ${hcpIndex}`);
+        }
+      }
+      const getsStroke = handicapStrokes[p.id]?.[activeHole] > 0;
+      if (getsStroke) hcpInfo.push("✚ stroke");
+      if (hcpInfo.length) {
+        nameWrap.appendChild(el("span", {
+          style: `font-size:0.7rem;color:${getsStroke ? "var(--green)" : "var(--text-muted)"};font-weight:${getsStroke ? "600" : "400"}`
+        }, hcpInfo.join(" · ")));
+      }
+      pHdr.appendChild(nameWrap);
 
       // Show existing score badge if saved
       if (existing?.strokes) {
