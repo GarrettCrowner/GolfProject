@@ -207,4 +207,36 @@ export const COURSE_PRESETS = [
     ],
     note: "Stroke indexes estimated — verify with local scorecard"
   },
+
+  {
+    name: "Carroll Valley Golf Resort",
+    city: "Fairfield", state: "PA",
+    par_total: 71, slope_rating: 128, course_rating: 72.3,
+    tees: [
+      { tee_name: "Blue",  slope_rating: 128, course_rating: 72.3, par_total: 71 },
+      { tee_name: "White", slope_rating: 127, course_rating: 70.7, par_total: 71 },
+      { tee_name: "Gold",  slope_rating: 123, course_rating: 66.7, par_total: 71 },
+      { tee_name: "Red",   slope_rating: 115, course_rating: 67.2, par_total: 71 },
+    ],
+    holes: [
+      { hole_number:  1, par: 5, stroke_index: 7  },
+      { hole_number:  2, par: 4, stroke_index: 5  },
+      { hole_number:  3, par: 3, stroke_index: 17 },
+      { hole_number:  4, par: 5, stroke_index: 1  },
+      { hole_number:  5, par: 3, stroke_index: 15 },
+      { hole_number:  6, par: 4, stroke_index: 11 },
+      { hole_number:  7, par: 4, stroke_index: 9  },
+      { hole_number:  8, par: 3, stroke_index: 13 },
+      { hole_number:  9, par: 5, stroke_index: 3  },
+      { hole_number: 10, par: 4, stroke_index: 8  },
+      { hole_number: 11, par: 3, stroke_index: 12 },
+      { hole_number: 12, par: 5, stroke_index: 4  },
+      { hole_number: 13, par: 4, stroke_index: 10 },
+      { hole_number: 14, par: 4, stroke_index: 6  },
+      { hole_number: 15, par: 3, stroke_index: 16 },
+      { hole_number: 16, par: 4, stroke_index: 2  },
+      { hole_number: 17, par: 5, stroke_index: 14 },
+      { hole_number: 18, par: 3, stroke_index: 18 },
+    ]
+  },
 ];
