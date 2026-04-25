@@ -24,7 +24,26 @@ router.get('/', async (req, res, next) => {
        ORDER BY r.created_at DESC`,
       [req.user.id]
     );
-    res.json(result.rows);
+    // Attach player names to each round for home page display
+    const rounds = result.rows;
+    const roundIds = rounds.map(r => r.id);
+    const playersResult = roundIds.length ? await query(
+      `SELECT rp.round_id,
+              COALESCE(u.name, rp.guest_name) AS name,
+              rp.color
+       FROM round_players rp
+       LEFT JOIN users u ON u.id = rp.user_id
+       WHERE rp.round_id = ANY($1)
+       ORDER BY rp.id ASC`,
+      [roundIds]
+    ) : { rows: [] };
+    const playersByRound = {};
+    playersResult.rows.forEach(p => {
+      if (!playersByRound[p.round_id]) playersByRound[p.round_id] = [];
+      playersByRound[p.round_id].push({ name: p.name, color: p.color });
+    });
+    rounds.forEach(r => { r.players = playersByRound[r.id] || []; });
+    res.json(rounds);
   } catch (err) { next(err); }
 });
 
