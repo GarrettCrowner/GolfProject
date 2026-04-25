@@ -360,7 +360,7 @@ export async function renderRound(app, navigate) {
       { game_type: "splashy",    label: "Splashy",    emoji: "💧", default_value: 1 },
       { game_type: "birdie",     label: "Birdie",     emoji: "🐦", default_value: 2 },
       { game_type: "eagle",      label: "Eagle",      emoji: "🦅", default_value: 5 },
-      { game_type: "stroke_play",label: "Stroke Play",emoji: "💰", default_value: 1 },
+      { game_type: "stroke_play",label: "Skins",emoji: "🎯", default_value: 1 },
     ];
 
     const gamesSection = el("div");
@@ -530,7 +530,7 @@ export async function renderRound(app, navigate) {
     // Active games badges
     const GAME_EMOJI = {
       sandy: "🏖️", poley: "🚩", barkie: "🌲", greenie: "🟢",
-      splashy: "💧", birdie: "🐦", eagle: "🦅", stroke_play: "💰"
+      splashy: "💧", birdie: "🐦", eagle: "🦅", stroke_play: "🎯"
     };
     if (games.length) {
       const gameBadges = el("div", { className: "flex gap-xs", style: "flex-wrap:wrap;margin-top:0.4rem" });
