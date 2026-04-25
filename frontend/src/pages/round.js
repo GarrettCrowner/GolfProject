@@ -141,18 +141,31 @@ export async function renderRound(app, navigate) {
     const parTotal     = round.par_total     || 72;
 
     for (const p of players) {
-      if (p.handicap_index && strokeIndexes.length) {
+      if (!p.handicap_index) {
+        handicapStrokes[p.id] = {};
+      } else if (p.handicap_index < 0) {
+        // Direct strokes mode — negative value means "give N strokes directly"
+        const directStrokes = Math.abs(p.handicap_index);
+        if (strokeIndexes.length) {
+          handicapStrokes[p.id] = distributeHandicapStrokes(directStrokes, strokeIndexes);
+        } else {
+          const strokes = {};
+          const base = Math.floor(directStrokes / round.holes);
+          const rem  = directStrokes % round.holes;
+          for (let h = 1; h <= round.holes; h++) strokes[h] = base + (h <= rem ? 1 : 0);
+          handicapStrokes[p.id] = strokes;
+        }
+      } else if (strokeIndexes.length) {
+        // USGA handicap index mode
         const ch = calculateCourseHandicap(p.handicap_index, slopeRating, courseRating, parTotal);
         handicapStrokes[p.id] = distributeHandicapStrokes(ch, strokeIndexes);
-      } else if (p.handicap_index) {
+      } else {
         const ch = calculateCourseHandicap(p.handicap_index, slopeRating, courseRating, parTotal);
         const strokes = {};
         const base = Math.floor(ch / round.holes);
         const rem  = ch % round.holes;
         for (let h = 1; h <= round.holes; h++) strokes[h] = base + (h <= rem ? 1 : 0);
         handicapStrokes[p.id] = strokes;
-      } else {
-        handicapStrokes[p.id] = {};
       }
     }
 
@@ -472,7 +485,14 @@ export async function renderRound(app, navigate) {
           const { calculateCourseHandicap, distributeHandicapStrokes } = await import("../utils/scoring.js");
           mappedPlayers.forEach(p => {
             const rp = players.find(rp => rp.id === p.id);
-            const ch = calculateCourseHandicap(rp?.handicap_index ?? 0, round.slope_rating, round.course_rating, round.par_total);
+            const hcpIndex = rp?.handicap_index ?? 0;
+            let ch;
+            if (hcpIndex < 0) {
+              // Direct strokes mode
+              ch = Math.abs(hcpIndex);
+            } else {
+              ch = calculateCourseHandicap(hcpIndex, round.slope_rating, round.course_rating, round.par_total);
+            }
             hcStrokes[p.id] = distributeHandicapStrokes(ch, strokeIndexes);
           });
         }
