@@ -670,8 +670,13 @@ export async function renderRound(app, navigate) {
       if (getsStroke) hcpInfo.push("✚ stroke");
       if (hcpInfo.length) {
         nameWrap.appendChild(el("span", {
-          style: `font-size:0.7rem;color:${getsStroke ? "var(--green)" : "var(--text-muted)"};font-weight:${getsStroke ? "600" : "400"}`
+          style: `font-size:0.7rem;color:var(--text-muted);font-weight:400`
         }, hcpInfo.join(" · ")));
+      }
+      if (getsStroke) {
+        nameWrap.appendChild(el("span", {
+          style: "font-size:0.7rem;color:var(--green);font-weight:700"
+        }, "−1 stroke this hole"));
       }
       pHdr.appendChild(nameWrap);
 
