@@ -109,6 +109,22 @@ function roundCard(round, navigate, isActive, onDelete) {
   header.appendChild(right);
   card.appendChild(header);
 
+  // Player avatars
+  if (round.players && round.players.length) {
+    const avatarRow = el("div", { style: "display:flex;gap:0.3rem;margin-bottom:0.4rem;flex-wrap:wrap;align-items:center" });
+    round.players.forEach(p => {
+      const avatar = el("div", {
+        style: `width:24px;height:24px;border-radius:50%;background:${p.color || "#4a7c59"};display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#fff;flex-shrink:0`
+      }, (p.name || "?")[0].toUpperCase());
+      avatar.title = p.name;
+      avatarRow.appendChild(avatar);
+    });
+    // Add names as compact text after avatars
+    const names = round.players.map(p => p.name).join(", ");
+    avatarRow.appendChild(el("span", { style: "font-size:0.75rem;color:var(--text-muted)" }, names));
+    card.appendChild(avatarRow);
+  }
+
   const meta = el("div", { className: "round-card-meta flex-between" });
   meta.appendChild(el("span", {}, round.course_name || "—"));
   meta.appendChild(el("span", {}, formatDate(round.created_at)));
