@@ -274,9 +274,36 @@ ${preset.city}`);
       const avatar = el("div", { className: "player-avatar", style: `background:${p.color}` }, p.name[0]?.toUpperCase() || "?");
       const info = el("div", { style: "flex:1" });
       info.appendChild(el("div", {}, p.name));
-      const hcap = el("input", { type: "number", placeholder: "Handicap index", value: p.handicap_index ?? "", step: "0.1", min: "0", max: "54", style: "margin-top:0.25rem;font-size:0.8rem" });
-      hcap.addEventListener("input", e => { players[i].handicap_index = parseFloat(e.target.value) || null; });
-      info.appendChild(hcap);
+      // Handicap mode toggle per player
+      const hcapRow = el("div", { style: "display:flex;gap:0.4rem;align-items:center;margin-top:0.25rem;flex-wrap:wrap" });
+      const useStrokes = p.useStrokes || false;
+      const modeBtn = el("button", {
+        className: "btn-outline",
+        style: "font-size:0.7rem;padding:0.15rem 0.4rem;white-space:nowrap"
+      }, useStrokes ? "Strokes" : "HCP Index");
+      modeBtn.addEventListener("click", () => {
+        players[i].useStrokes = !players[i].useStrokes;
+        players[i].handicap_index = null;
+        players[i].strokes = null;
+        render();
+      });
+      hcapRow.appendChild(modeBtn);
+      if (useStrokes) {
+        const strokeInput = el("input", { type: "number", placeholder: "# of strokes", value: p.strokes ?? "", step: "1", min: "0", max: "36", style: "width:7rem;font-size:0.8rem" });
+        strokeInput.addEventListener("input", e => {
+          const val = parseInt(e.target.value) || null;
+          players[i].strokes = val;
+          // Store as negative value to signal "direct strokes" mode to round.js
+          players[i].handicap_index = val != null ? -(val) : null;
+          players[i].useStrokes = true;
+        });
+        hcapRow.appendChild(strokeInput);
+      } else {
+        const hcap = el("input", { type: "number", placeholder: "Handicap index", value: p.handicap_index ?? "", step: "0.1", min: "0", max: "54", style: "width:7rem;font-size:0.8rem" });
+        hcap.addEventListener("input", e => { players[i].handicap_index = parseFloat(e.target.value) || null; });
+        hcapRow.appendChild(hcap);
+      }
+      info.appendChild(hcapRow);
       const removeBtn = el("button", { className: "btn-outline", style: "padding:0.25rem 0.65rem;font-size:0.8rem" }, "✕");
       removeBtn.addEventListener("click", () => { players.splice(i, 1); render(); });
       row.appendChild(avatar);
