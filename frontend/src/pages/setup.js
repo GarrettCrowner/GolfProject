@@ -33,6 +33,7 @@ export async function renderSetup(app, navigate) {
   let selectedTee       = null;  // { tee_name, slope_rating, course_rating, par_total }
   let courseSearchTimer = null;
   let roundHoles = 18; // 9 or 18
+  let handicapMode = 'index'; // 'index' or 'strokes'
   let me = null;
 
   try {
@@ -147,6 +148,23 @@ ${preset.city}`);
       holesRow.appendChild(btn);
     });
     detailsCard.appendChild(holesRow);
+
+    // Handicap mode toggle
+    const hcapModeRow = el("div", { style: "display:flex;gap:0.5rem;margin-top:0.5rem;align-items:center" });
+    hcapModeRow.appendChild(el("span", { className: "text-muted text-sm", style: "flex-shrink:0" }, "Handicap:"));
+    [["index", "HCP Index"], ["strokes", "Strokes Gained"]].forEach(([mode, label]) => {
+      const btn = el("button", {
+        className: handicapMode === mode ? "btn-primary btn-sm" : "btn-outline btn-sm",
+      }, label);
+      btn.addEventListener("click", () => {
+        handicapMode = mode;
+        // Reset all player handicap values when switching modes
+        players.forEach(p => { p.handicap_index = null; p.useStrokes = mode === 'strokes'; });
+        render();
+      });
+      hcapModeRow.appendChild(btn);
+    });
+    detailsCard.appendChild(hcapModeRow);
 
     // Course search
     const courseSearchWrap = el("div", { style: "position:relative;margin-top:0.5rem" });
@@ -274,32 +292,18 @@ ${preset.city}`);
       const avatar = el("div", { className: "player-avatar", style: `background:${p.color}` }, p.name[0]?.toUpperCase() || "?");
       const info = el("div", { style: "flex:1" });
       info.appendChild(el("div", {}, p.name));
-      // Handicap mode toggle per player
-      const hcapRow = el("div", { style: "display:flex;gap:0.4rem;align-items:center;margin-top:0.25rem;flex-wrap:wrap" });
-      const useStrokes = p.useStrokes || false;
-      const modeBtn = el("button", {
-        className: "btn-outline",
-        style: "font-size:0.7rem;padding:0.15rem 0.4rem;white-space:nowrap"
-      }, useStrokes ? "Strokes" : "HCP Index");
-      modeBtn.addEventListener("click", () => {
-        players[i].useStrokes = !players[i].useStrokes;
-        players[i].handicap_index = null;
-        players[i].strokes = null;
-        render();
-      });
-      hcapRow.appendChild(modeBtn);
-      if (useStrokes) {
-        const strokeInput = el("input", { type: "number", placeholder: "# of strokes", value: p.strokes ?? "", step: "1", min: "0", max: "36", style: "width:7rem;font-size:0.8rem" });
+      // Single handicap input — mode controlled at round level
+      const hcapRow = el("div", { style: "display:flex;gap:0.4rem;align-items:center;margin-top:0.25rem" });
+      if (handicapMode === 'strokes') {
+        const strokeInput = el("input", { type: "number", placeholder: "Strokes gained", value: p.strokes ?? "", step: "1", min: "0", max: "36", style: "width:8rem;font-size:0.8rem" });
         strokeInput.addEventListener("input", e => {
           const val = parseInt(e.target.value) || null;
           players[i].strokes = val;
-          // Store as negative value to signal "direct strokes" mode to round.js
           players[i].handicap_index = val != null ? -(val) : null;
-          players[i].useStrokes = true;
         });
         hcapRow.appendChild(strokeInput);
       } else {
-        const hcap = el("input", { type: "number", placeholder: "Handicap index", value: p.handicap_index ?? "", step: "0.1", min: "0", max: "54", style: "width:7rem;font-size:0.8rem" });
+        const hcap = el("input", { type: "number", placeholder: "Handicap index", value: p.handicap_index ?? "", step: "0.1", min: "0", max: "54", style: "width:8rem;font-size:0.8rem" });
         hcap.addEventListener("input", e => { players[i].handicap_index = parseFloat(e.target.value) || null; });
         hcapRow.appendChild(hcap);
       }
