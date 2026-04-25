@@ -405,29 +405,37 @@ router.get('/stats/season', async (req, res, next) => {
     const userId = req.user.id;
     const year = new Date().getFullYear();
 
-    // Get all rounds the current user participated in this year
+    // Get all completed rounds this year that the current user was in
+    const roundsResult = await query(`
+      SELECT DISTINCT r.id FROM rounds r
+      JOIN round_players rp ON rp.round_id = r.id AND rp.user_id = $1
+      WHERE r.status = 'completed'
+        AND EXTRACT(YEAR FROM r.completed_at) = $2
+    `, [userId, year]);
+
+    const roundIds = roundsResult.rows.map(r => r.id);
+    if (!roundIds.length) return res.json({ year, leaderboard: [] });
+
+    // For each user in those rounds, sum their net earnings from settlements
     const result = await query(`
       SELECT
-        u.id, u.name,
-        COALESCE(SUM(
-          CASE WHEN s_from.user_id = u.id THEN -se.amount
-               WHEN s_to.user_id   = u.id THEN  se.amount
-               ELSE 0 END
-        ), 0) AS season_earnings,
-        COUNT(DISTINCT rp.round_id) AS rounds_played
-      FROM round_players rp
-      JOIN users u ON u.id = rp.user_id
-      JOIN rounds r ON r.id = rp.round_id
-      LEFT JOIN settlements se ON se.round_id = rp.round_id
-      LEFT JOIN round_players s_from ON s_from.id = se.from_player
-      LEFT JOIN round_players s_to   ON s_to.id   = se.to_player
-      WHERE r.status = 'completed'
-        AND EXTRACT(YEAR FROM r.completed_at) = $1
-        AND r.id IN (SELECT round_id FROM round_players WHERE user_id = $2)
-        AND rp.user_id IS NOT NULL
+        u.id,
+        u.name,
+        COUNT(DISTINCT rp.round_id) AS rounds_played,
+        COALESCE(
+          (SELECT SUM(se.amount) FROM settlements se
+           JOIN round_players rp2 ON rp2.id = se.to_player
+           WHERE rp2.user_id = u.id AND se.round_id = ANY($1))
+          -
+          (SELECT SUM(se.amount) FROM settlements se
+           JOIN round_players rp3 ON rp3.id = se.from_player
+           WHERE rp3.user_id = u.id AND se.round_id = ANY($1))
+        , 0) AS season_earnings
+      FROM users u
+      JOIN round_players rp ON rp.user_id = u.id AND rp.round_id = ANY($1)
       GROUP BY u.id, u.name
       ORDER BY season_earnings DESC
-    `, [year, userId]);
+    `, [roundIds]);
 
     res.json({ year, leaderboard: result.rows });
   } catch (err) { next(err); }
@@ -459,17 +467,17 @@ router.get('/stats/h2h', async (req, res, next) => {
 
       // Net earnings vs this friend across shared rounds
       const earnings = await query(`
-        SELECT COALESCE(SUM(
-          CASE
-            WHEN s_from.user_id = $1 AND s_to.user_id = $2 THEN -se.amount
-            WHEN s_to.user_id   = $1 AND s_from.user_id = $2 THEN se.amount
-            ELSE 0
-          END
-        ), 0) AS net
-        FROM settlements se
-        JOIN round_players s_from ON s_from.id = se.from_player
-        JOIN round_players s_to   ON s_to.id   = se.to_player
-        WHERE se.round_id = ANY($3)
+        SELECT COALESCE(
+          (SELECT SUM(se.amount) FROM settlements se
+           JOIN round_players rp_to   ON rp_to.id   = se.to_player   AND rp_to.user_id   = $1
+           JOIN round_players rp_from ON rp_from.id = se.from_player AND rp_from.user_id = $2
+           WHERE se.round_id = ANY($3))
+          -
+          (SELECT SUM(se.amount) FROM settlements se
+           JOIN round_players rp_from ON rp_from.id = se.from_player AND rp_from.user_id = $1
+           JOIN round_players rp_to   ON rp_to.id   = se.to_player   AND rp_to.user_id   = $2
+           WHERE se.round_id = ANY($3))
+        , 0) AS net
       `, [userId, friend.id, roundIds]);
 
       const net = parseFloat(earnings.rows[0]?.net || 0);
@@ -478,17 +486,17 @@ router.get('/stats/h2h', async (req, res, next) => {
       let wins = 0, losses = 0;
       for (const rid of roundIds) {
         const roundEarnings = await query(`
-          SELECT COALESCE(SUM(
-            CASE
-              WHEN s_from.user_id = $1 AND s_to.user_id = $2 THEN -se.amount
-              WHEN s_to.user_id   = $1 AND s_from.user_id = $2 THEN se.amount
-              ELSE 0
-            END
-          ), 0) AS net
-          FROM settlements se
-          JOIN round_players s_from ON s_from.id = se.from_player
-          JOIN round_players s_to   ON s_to.id   = se.to_player
-          WHERE se.round_id = $3
+          SELECT COALESCE(
+            (SELECT SUM(se.amount) FROM settlements se
+             JOIN round_players rp_to   ON rp_to.id   = se.to_player   AND rp_to.user_id   = $1
+             JOIN round_players rp_from ON rp_from.id = se.from_player AND rp_from.user_id = $2
+             WHERE se.round_id = $3)
+            -
+            (SELECT SUM(se.amount) FROM settlements se
+             JOIN round_players rp_from ON rp_from.id = se.from_player AND rp_from.user_id = $1
+             JOIN round_players rp_to   ON rp_to.id   = se.to_player   AND rp_to.user_id   = $2
+             WHERE se.round_id = $3)
+          , 0) AS net
         `, [userId, friend.id, rid]);
         const roundNet = parseFloat(roundEarnings.rows[0]?.net || 0);
         if (roundNet > 0) wins++;
@@ -516,16 +524,17 @@ router.get('/stats/best-rounds', async (req, res, next) => {
     const result = await query(`
       SELECT
         r.id, r.name, r.course_name, r.completed_at,
-        COALESCE(SUM(
-          CASE WHEN s_to.user_id   = $1 THEN  se.amount
-               WHEN s_from.user_id = $1 THEN -se.amount
-               ELSE 0 END
-        ), 0) AS net_earnings
+        COALESCE(
+          (SELECT SUM(se.amount) FROM settlements se
+           JOIN round_players rp2 ON rp2.id = se.to_player
+           WHERE rp2.user_id = $1 AND se.round_id = r.id)
+          -
+          (SELECT SUM(se.amount) FROM settlements se
+           JOIN round_players rp3 ON rp3.id = se.from_player
+           WHERE rp3.user_id = $1 AND se.round_id = r.id)
+        , 0) AS net_earnings
       FROM rounds r
       JOIN round_players rp ON rp.round_id = r.id AND rp.user_id = $1
-      LEFT JOIN settlements se ON se.round_id = r.id
-      LEFT JOIN round_players s_from ON s_from.id = se.from_player
-      LEFT JOIN round_players s_to   ON s_to.id   = se.to_player
       WHERE r.status = 'completed'
       GROUP BY r.id, r.name, r.course_name, r.completed_at
       ORDER BY net_earnings DESC
