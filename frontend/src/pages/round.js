@@ -31,6 +31,7 @@ export async function renderRound(app, navigate) {
   let games      = [];
   let holeScores = [];
   let specials   = [];
+  let handicapStrokes = {};
   let activeHole = 1;
   let wsStatus   = "connecting";
 
@@ -134,7 +135,7 @@ export async function renderRound(app, navigate) {
   function computeLeaderboard() {
     const mappedPlayers = players.map(p => ({ id: p.id, name: playerName(p) }));
 
-    const handicapStrokes = {};
+    handicapStrokes = {};
     // Use actual slope/rating from selected tee if available
     const slopeRating  = round.slope_rating  || 113;
     const courseRating = round.course_rating || null;
