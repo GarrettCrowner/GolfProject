@@ -33,8 +33,24 @@ export async function renderSetup(app, navigate) {
   let selectedTee       = null;  // { tee_name, slope_rating, course_rating, par_total }
   let courseSearchTimer = null;
   let roundHoles = 18; // 9 or 18
+  let me = null;
 
-  try { friends = await api.get("/friends"); } catch {}
+  try {
+    [friends, me] = await Promise.all([
+      api.get("/friends"),
+      api.get("/auth/me"),
+    ]);
+    // Pre-add the round creator as first player
+    if (me && !players.some(p => p.user_id === me.id)) {
+      players.push({
+        tempId: Date.now(),
+        name: me.name,
+        user_id: me.id,
+        handicap_index: null,
+        color: PLAYER_COLORS[0],
+      });
+    }
+  } catch {}
 
   function render() {
     app.innerHTML = "";
