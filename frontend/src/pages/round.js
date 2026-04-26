@@ -141,14 +141,20 @@ export async function renderRound(app, navigate) {
     const courseRating = round.course_rating || null;
     const parTotal     = round.par_total     || 72;
 
+    // Map snake_case API response to camelCase for distributeHandicapStrokes
+    const mappedSI = strokeIndexes.map(si => ({
+      holeNumber: si.hole_number,
+      strokeIndex: si.stroke_index,
+    }));
+
     for (const p of players) {
       if (!p.handicap_index) {
         handicapStrokes[p.id] = {};
       } else if (p.handicap_index < 0) {
         // Direct strokes mode — negative value means "give N strokes directly"
         const directStrokes = Math.abs(p.handicap_index);
-        if (strokeIndexes.length) {
-          handicapStrokes[p.id] = distributeHandicapStrokes(directStrokes, strokeIndexes);
+        if (mappedSI.length) {
+          handicapStrokes[p.id] = distributeHandicapStrokes(directStrokes, mappedSI);
         } else {
           const strokes = {};
           const base = Math.floor(directStrokes / round.holes);
@@ -156,10 +162,10 @@ export async function renderRound(app, navigate) {
           for (let h = 1; h <= round.holes; h++) strokes[h] = base + (h <= rem ? 1 : 0);
           handicapStrokes[p.id] = strokes;
         }
-      } else if (strokeIndexes.length) {
+      } else if (mappedSI.length) {
         // USGA handicap index mode
         const ch = calculateCourseHandicap(p.handicap_index, slopeRating, courseRating, parTotal);
-        handicapStrokes[p.id] = distributeHandicapStrokes(ch, strokeIndexes);
+        handicapStrokes[p.id] = distributeHandicapStrokes(ch, mappedSI);
       } else {
         const ch = calculateCourseHandicap(p.handicap_index, slopeRating, courseRating, parTotal);
         const strokes = {};
