@@ -7,7 +7,7 @@ import { renderGamesBadge } from "../components/gamesBadge.js";
 import {
   calculateBalances, calculateSettlements, deriveScoreSpecials,
   calculateStrokePlayPayouts, mergeBalances, getLeaderboard,
-  calculateCourseHandicap, SCORE_GAME_DEFAULTS,
+  calculateCourseHandicap, distributeHandicapStrokes, SCORE_GAME_DEFAULTS,
 } from "../utils/scoring.js";
 
 export async function renderSettlement(app, navigate) {
@@ -28,10 +28,11 @@ export async function renderSettlement(app, navigate) {
   }
 
   try {
-    const [round, holeScores, specials] = await Promise.all([
+    const [round, holeScores, specials, strokeIndexes] = await Promise.all([
       fetchWithRetry(() => api.get(`/rounds/${roundId}`)),
       fetchWithRetry(() => api.get(`/rounds/${roundId}/holes`)),
       fetchWithRetry(() => api.get(`/rounds/${roundId}/specials`)),
+      fetchWithRetry(() => api.get(`/rounds/${roundId}/stroke-indexes`)),
     ]);
 
     const players  = round.players;
@@ -44,17 +45,42 @@ export async function renderSettlement(app, navigate) {
       name: p.user_name || p.guest_name || "Unknown",
     }));
 
+    // Map snake_case stroke indexes to camelCase
+    const mappedSI = strokeIndexes.map(si => ({
+      holeNumber: si.hole_number,
+      strokeIndex: si.stroke_index,
+    }));
+
     const handicapStrokes = {};
+    const slopeRating  = round.slope_rating  || 113;
+    const courseRating = round.course_rating || null;
+    const parTotal     = round.par_total     || 72;
+
     for (const p of players) {
-      if (p.handicap_index) {
-        const ch = calculateCourseHandicap(p.handicap_index);
+      if (!p.handicap_index) {
+        handicapStrokes[p.id] = {};
+      } else if (p.handicap_index < 0) {
+        // Direct strokes gained mode
+        const directStrokes = Math.abs(p.handicap_index);
+        if (mappedSI.length) {
+          handicapStrokes[p.id] = distributeHandicapStrokes(directStrokes, mappedSI);
+        } else {
+          const strokes = {};
+          const base = Math.floor(directStrokes / round.holes);
+          const rem  = directStrokes % round.holes;
+          for (let h = 1; h <= round.holes; h++) strokes[h] = base + (h <= rem ? 1 : 0);
+          handicapStrokes[p.id] = strokes;
+        }
+      } else if (mappedSI.length) {
+        const ch = calculateCourseHandicap(p.handicap_index, slopeRating, courseRating, parTotal);
+        handicapStrokes[p.id] = distributeHandicapStrokes(ch, mappedSI);
+      } else {
+        const ch = calculateCourseHandicap(p.handicap_index, slopeRating, courseRating, parTotal);
         const strokes = {};
         const base = Math.floor(ch / round.holes);
         const rem  = ch % round.holes;
         for (let h = 1; h <= round.holes; h++) strokes[h] = base + (h <= rem ? 1 : 0);
         handicapStrokes[p.id] = strokes;
-      } else {
-        handicapStrokes[p.id] = {};
       }
     }
 
