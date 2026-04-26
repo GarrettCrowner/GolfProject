@@ -19,7 +19,10 @@ export function renderPlayerCard(player, index = 0, onRemove = null) {
   const info = el("div", { style: "flex:1;min-width:0" });
   info.appendChild(el("div", { className: "font-bold" }, player.name || "Unknown"));
   if (player.handicap_index != null) {
-    info.appendChild(el("div", { className: "text-muted text-sm" }, `HCP ${player.handicap_index}`));
+    const hcpDisplay = player.handicap_index < 0
+      ? `${Math.abs(player.handicap_index)} strokes gained`
+      : `HCP ${player.handicap_index}`;
+    info.appendChild(el("div", { className: "text-muted text-sm" }, hcpDisplay));
   }
 
   card.appendChild(avatar);
