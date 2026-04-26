@@ -7,7 +7,8 @@ export const SCORE_GAME_DEFAULTS = {
 };
 
 export function calculateCourseHandicap(handicapIndex, slopeRating = 113, courseRating = null, par = 72) {
-  const base = handicapIndex * (slopeRating / 113);
+  const slope = slopeRating && slopeRating > 0 ? slopeRating : 113;
+  const base = handicapIndex * (slope / 113);
   const adjustment = courseRating != null ? courseRating - par : 0;
   return Math.round(base + adjustment);
 }
