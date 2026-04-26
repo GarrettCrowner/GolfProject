@@ -25,7 +25,7 @@ async function query(text, params) {
   const res = await pool.query(text, params);
   const duration = Date.now() - start;
   if (process.env.NODE_ENV !== 'production') {
-    console.log('query', { text, duration, rows: res.rowCount });
+    // console.log('query', { text, duration, rows: res.rowCount }) // disabled in production;
   }
   return res;
 }
