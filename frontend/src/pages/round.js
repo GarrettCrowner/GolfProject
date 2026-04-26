@@ -667,7 +667,7 @@ export async function renderRound(app, navigate) {
       if (getsStroke) {
         nameWrap.appendChild(el("span", {
           style: "font-size:0.7rem;color:var(--green);font-weight:700"
-        }, "−1 stroke this hole"));
+        }, `${name} will get −1 stroke on this hole`));
       }
       pHdr.appendChild(nameWrap);
 
