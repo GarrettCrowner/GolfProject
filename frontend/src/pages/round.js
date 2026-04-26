@@ -487,8 +487,9 @@ export async function renderRound(app, navigate) {
         // Rebuild handicap strokes
         const hcStrokes = {};
         mappedPlayers.forEach(p => { hcStrokes[p.id] = {}; });
-        const strokeIndexes = await api.get(`/rounds/${roundId}/stroke-indexes`).catch(() => []);
-        if (strokeIndexes.length) {
+        const strokeIndexesRaw = await api.get(`/rounds/${roundId}/stroke-indexes`).catch(() => []);
+        const mappedSI = strokeIndexesRaw.map(si => ({ holeNumber: si.hole_number, strokeIndex: si.stroke_index }));
+        if (mappedSI.length) {
           const { calculateCourseHandicap, distributeHandicapStrokes } = await import("../utils/scoring.js");
           mappedPlayers.forEach(p => {
             const rp = players.find(rp => rp.id === p.id);
@@ -500,7 +501,7 @@ export async function renderRound(app, navigate) {
             } else {
               ch = calculateCourseHandicap(hcpIndex, round.slope_rating, round.course_rating, round.par_total);
             }
-            hcStrokes[p.id] = distributeHandicapStrokes(ch, strokeIndexes);
+            hcStrokes[p.id] = distributeHandicapStrokes(ch, mappedSI);
           });
         }
         strokeBal = calculateStrokePlayPayouts(
