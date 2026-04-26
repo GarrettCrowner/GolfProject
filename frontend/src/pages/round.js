@@ -537,15 +537,7 @@ export async function renderRound(app, navigate) {
     const hdrLeft = el("div");
     const titleRow = el("div", { className: "flex gap-sm", style: "align-items:center" });
     titleRow.appendChild(el("h1", { style: "margin-bottom:0" }, round.name || "Round"));
-    // WS connection dot
-    const wsDot = el("div", {
-      id: "ws-dot",
-      title: wsStatus,
-      style: `width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${
-        wsStatus === "connected" ? "#25a864" : "#e8960c"
-      };margin-top:4px`
-    });
-    titleRow.appendChild(wsDot);
+
     hdrLeft.appendChild(titleRow);
     if (round.course_name) {
       const courseStr = round.tee_name
