@@ -662,23 +662,8 @@ export async function renderRound(app, navigate) {
       const nameWrap = el("div", { style: "display:flex;flex-direction:column;gap:0.1rem" });
       nameWrap.appendChild(el("span", { className: "player-name" }, name));
 
-      // Handicap info + stroke indicator
-      const hcpInfo = [];
-      const hcpIndex = p.handicap_index;
-      if (hcpIndex) {
-        if (hcpIndex < 0) {
-          hcpInfo.push(`${Math.abs(hcpIndex)} strokes gained`);
-        } else {
-          hcpInfo.push(`HCP ${hcpIndex}`);
-        }
-      }
+      // Stroke indicator for this hole only
       const getsStroke = handicapStrokes[p.id]?.[activeHole] > 0;
-      if (getsStroke) hcpInfo.push("✚ stroke");
-      if (hcpInfo.length) {
-        nameWrap.appendChild(el("span", {
-          style: `font-size:0.7rem;color:var(--text-muted);font-weight:400`
-        }, hcpInfo.join(" · ")));
-      }
       if (getsStroke) {
         nameWrap.appendChild(el("span", {
           style: "font-size:0.7rem;color:var(--green);font-weight:700"
