@@ -32,7 +32,7 @@ export async function renderSettlement(app, navigate) {
       fetchWithRetry(() => api.get(`/rounds/${roundId}`)),
       fetchWithRetry(() => api.get(`/rounds/${roundId}/holes`)),
       fetchWithRetry(() => api.get(`/rounds/${roundId}/specials`)),
-      fetchWithRetry(() => api.get(`/rounds/${roundId}/stroke-indexes`)),
+      fetchWithRetry(() => api.get(`/rounds/${roundId}/stroke-indexes`).catch(() => [])),
     ]);
 
     const players  = round.players;
@@ -46,7 +46,7 @@ export async function renderSettlement(app, navigate) {
     }));
 
     // Map snake_case stroke indexes to camelCase
-    const mappedSI = strokeIndexes.map(si => ({
+    const mappedSI = (strokeIndexes || []).map(si => ({
       holeNumber: si.hole_number,
       strokeIndex: si.stroke_index,
     }));
